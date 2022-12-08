@@ -6,6 +6,24 @@ using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
 
+enum Locations
+{
+    local,
+    enAU,
+    enCA,
+    frCA,
+    zhCN,
+    deDE,
+    esES,
+    frFR,
+    enIN,
+    itIT,
+    jaJP,
+    enNZ,
+    enUK,
+    enUS
+}
+
 namespace BingWallpaper
 {
     public partial class MainForm : Form
@@ -75,11 +93,16 @@ namespace BingWallpaper
         {
             try
             {
-                var bingImg = await _provider.GetImage();
+                string mkt = "";
+                if (!_settings.Location.Equals("local"))
+                {
+                    mkt = "&mkt=" + _settings.Location.Substring(0, 2) + "-" + _settings.Location.Substring(2, 2);
+                }
+                var bingImg = await _provider.GetImage(mkt);
 
                 Wallpaper.Set(bingImg.Img, Wallpaper.Style.Stretched);
                 _currentWallpaper = bingImg.Img;
-                SetCopyrightTrayLabel(bingImg.Copyright, bingImg.CopyrightLink);
+                SetCopyrightTrayLabel(bingImg.Title, bingImg.Quiz, bingImg.Copyright, bingImg.CopyrightLink);
 
                 ShowSetWallpaperNotification();
             }
@@ -89,10 +112,12 @@ namespace BingWallpaper
             }
         }
 
-        public void SetCopyrightTrayLabel(string copyright, string copyrightLink)
+        public void SetCopyrightTrayLabel(string title, string quiz, string copyright, string copyrightLink)
         {
             _settings.ImageCopyright = copyright;
-            _settings.ImageCopyrightLink = copyrightLink;
+
+            _titleLabel.Text = title;
+            _titleLabel.Tag = quiz;
 
             _copyrightLabel.Text = copyright;
             _copyrightLabel.Tag = copyrightLink;
@@ -103,6 +128,7 @@ namespace BingWallpaper
         private NotifyIcon _trayIcon;
         private ContextMenu _trayMenu;
         private MenuItem _copyrightLabel;
+        private MenuItem _titleLabel;
 
         public void AddTrayIcons()
         {
@@ -121,6 +147,19 @@ namespace BingWallpaper
                 }
             };
             _trayMenu.MenuItems.Add(_copyrightLabel);
+
+            // Copyright button
+            _titleLabel = new MenuItem("");
+            _titleLabel.Click += (s, e) =>
+            {
+                if (((MenuItem)s).Tag != null)
+                {
+                    var url = ((MenuItem)s).Tag.ToString();
+                    if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
+                        System.Diagnostics.Process.Start(url);
+                }
+            };
+            _trayMenu.MenuItems.Add(_titleLabel);
 
             // Separator
             _trayMenu.MenuItems.Add("-");
@@ -151,6 +190,19 @@ namespace BingWallpaper
             };
             _trayMenu.MenuItems.Add(save);
 
+            // Set Location
+            var location = new MenuItem("Set Location");
+            var allLocations = (Locations[]) Enum.GetValues(typeof(Locations));
+            foreach (var item in allLocations)
+            {
+                var mi = new MenuItem(item.ToString());
+                mi.RadioCheck = true;
+                mi.Checked = item.ToString().Equals(_settings.Location);
+                mi.Click += OnChangeLocation;
+                location.MenuItems.Add(mi);
+            }
+            _trayMenu.MenuItems.Add(location);
+
             // Launch on startup button
             var launch = new MenuItem("Launch on Startup");
             launch.Checked = _settings.LaunchOnStartup;
@@ -165,7 +217,6 @@ namespace BingWallpaper
             // Create a tray icon. Here we are setting the tray icon to be the same as the application's icon
             _trayIcon = new NotifyIcon();
             _trayIcon.Text = "Bing Wallpaper";
-            //_trayIcon.Icon = new Icon("Resources/bing-icon.ico", 40, 40);
             _trayIcon.Icon = Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location);
 
             // open tray icon on left click
@@ -183,7 +234,7 @@ namespace BingWallpaper
             _trayIcon.Visible = true;
         }
 
-        
+
 
         private void OnStartupLaunch(object sender, EventArgs e)
         {
@@ -191,6 +242,18 @@ namespace BingWallpaper
             launch.Checked = !launch.Checked;
             SetStartup(launch.Checked);
             _settings.LaunchOnStartup = launch.Checked;
+        }
+
+        private void OnChangeLocation(object sender, EventArgs e)
+        {
+            var location = (MenuItem)sender;
+            foreach (MenuItem item in location.Parent.MenuItems)
+            {
+                item.Checked = false;
+            }
+            location.Checked = true;
+            _settings.Location = location.Text;
+            SetWallpaper();
         }
 
         protected override void Dispose(bool isDisposing)

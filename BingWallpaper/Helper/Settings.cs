@@ -58,12 +58,12 @@ namespace BingWallpaper
             }
         }
 
-        public string ImageCopyrightLink
+        public string Location
         {
-            get { return _options.ImgCopyrightLink; }
+            get { return _options.Location; }
             set
             {
-                _options.ImgCopyrightLink = value;
+                _options.Location = value;
                 Save();
             }
         }
@@ -88,6 +88,8 @@ namespace BingWallpaper
             public string ImgCopyright = "Bing Wallpaper";
             [DataMember]
             public string ImgCopyrightLink = "https://www.bing.com";
+            [DataMember]
+            public string Location = "local";
         }
     }
 }
