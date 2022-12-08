@@ -113,9 +113,12 @@ namespace BingWallpaper
             _copyrightLabel = new MenuItem("Bing Wallpaper");
             _copyrightLabel.Click += (s, e) =>
             {
-                var url = ((MenuItem)s).Tag.ToString();
-                if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
-                    System.Diagnostics.Process.Start(url);
+                if (((MenuItem)s).Tag != null)
+                {
+                    var url = ((MenuItem)s).Tag.ToString();
+                    if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
+                        System.Diagnostics.Process.Start(url);
+                }
             };
             _trayMenu.MenuItems.Add(_copyrightLabel);
 
