@@ -237,8 +237,6 @@ namespace BingWallpaper
             _trayIcon.Visible = true;
         }
 
-
-
         private void OnStartupLaunch(object sender, EventArgs e)
         {
             var launch = (MenuItem)sender;

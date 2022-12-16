@@ -20,7 +20,7 @@ namespace BingWallpaper
                     var res = (Result)ser.ReadObject(jsonStream);
                     using (var imgStream = await client.GetStreamAsync(new Uri(baseUri + res.images[0].URL)))
                     {
-                        return new BingImage(Image.FromStream(imgStream), res.images[0].Title, (baseUri + res.images[0].Quiz), res.images[0].Copyright, res.images[0].CopyrightLink);
+                        return new BingImage(Image.FromStream(imgStream), res.images[0].Copyright, res.images[0].CopyrightLink, res.images[0].Title, (baseUri + res.images[0].Quiz));
                     }
                 }
             }
@@ -42,31 +42,31 @@ namespace BingWallpaper
             public string URL { get; set; }
             [DataMember(Name = "urlbase")]
             public string URLBase { get; set; }
-            [DataMember(Name = "title")]
-            public string Title { get; set; }
-            [DataMember(Name = "quiz")]
-            public string Quiz { get; set; }
             [DataMember(Name = "copyright")]
             public string Copyright { get; set; }
             [DataMember(Name = "copyrightlink")]
             public string CopyrightLink { get; set; }
+            [DataMember(Name = "title")]
+            public string Title { get; set; }
+            [DataMember(Name = "quiz")]
+            public string Quiz { get; set; }
         }
     }
 
     public class BingImage
     {
-        public BingImage(Image img, string title, string quiz, string copyright, string copyrightLink)
+        public BingImage(Image img, string copyright, string copyrightLink, string title, string quiz)
         {
             Img = img;
-            Title = title;
-            Quiz = quiz;
             Copyright = copyright;
             CopyrightLink = copyrightLink;
+            Title = title;
+            Quiz = quiz;
         }
         public Image Img { get; set; }
-        public string Title { get; set; }
-        public string Quiz { get; set; }
         public string Copyright { get; set; }
         public string CopyrightLink { get; set; }
+        public string Title { get; set; }
+        public string Quiz { get; set; }
     }
 }
