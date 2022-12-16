@@ -58,6 +58,36 @@ namespace BingWallpaper
             }
         }
 
+        public string ImageCopyrightLink
+        {
+            get { return _options.ImgCopyrightLink; }
+            set
+            {
+                _options.ImgCopyrightLink = value;
+                Save();
+            }
+        }
+
+        public string ImageTitle
+        {
+            get { return _options.ImgTitle; }
+            set
+            {
+                _options.ImgTitle = value;
+                Save();
+            }
+        }
+
+        public string ImageQuiz
+        {
+            get { return _options.ImgQuiz; }
+            set
+            {
+                _options.ImgQuiz = value;
+                Save();
+            }
+        }
+
         public string Location
         {
             get { return _options.Location; }
@@ -88,6 +118,10 @@ namespace BingWallpaper
             public string ImgCopyright = "Bing Wallpaper";
             [DataMember]
             public string ImgCopyrightLink = "https://www.bing.com";
+            [DataMember]
+            public string ImgTitle = "";
+            [DataMember]
+            public string ImgQuiz = "https://www.bing.com";
             [DataMember]
             public string Location = "local";
         }
