@@ -54,6 +54,16 @@ namespace BingWallpaper
             }
         }
 
+        public bool PauseSettingWallpaper
+        {
+            get { return _options.PauseSettingWallpaper; }
+            set
+            {
+                _options.PauseSettingWallpaper = value;
+                Save();
+            }
+        }
+
         public string Location
         {
             get { return _options.Location; }
@@ -80,6 +90,8 @@ namespace BingWallpaper
         {
             [DataMember]
             public bool AutoSaveWallpaperToPictures = false;
+            [DataMember]
+            public bool PauseSettingWallpaper = false;
             [DataMember]
             public bool LaunchOnStartup = true;
             [DataMember]

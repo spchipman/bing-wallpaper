@@ -82,7 +82,11 @@ namespace BingWallpaper
                 }
                 var bingImg = await _provider.GetImage(mkt);
 
-                Wallpaper.Set(bingImg.Img, Wallpaper.Style.Stretched);
+                if (!_settings.PauseSettingWallpaper)
+                {
+                    Wallpaper.Set(bingImg.Img, Wallpaper.Style.Stretched);
+                }
+
                 _currentWallpaper = bingImg;
 
                 _titleLabel.Tag = _currentWallpaper.CopyrightLink;
@@ -211,6 +215,17 @@ namespace BingWallpaper
                 _settings.AutoSaveWallpaperToPictures = menuItem.Checked;
             };
             _trayMenu.MenuItems.Add(autoSave);
+
+            // Pause Setting Wallpaper button
+            var pauseSetting = new MenuItem("Pause Setting Wallpaper");
+            pauseSetting.Checked = _settings.PauseSettingWallpaper;
+            pauseSetting.Click += (s, e) =>
+            {
+                var menuItem = (MenuItem)s;
+                menuItem.Checked = !menuItem.Checked;
+                _settings.PauseSettingWallpaper = menuItem.Checked;
+            };
+            _trayMenu.MenuItems.Add(pauseSetting);
 
             // Separator
             _trayMenu.MenuItems.Add("-");
