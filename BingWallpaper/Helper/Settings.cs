@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BingWallpaper
 {
@@ -48,42 +44,12 @@ namespace BingWallpaper
             }
         }
 
-        public string ImageCopyright
+        public bool AutoSaveWallpaperToPictures
         {
-            get { return _options.ImgCopyright; }
+            get { return _options.AutoSaveWallpaperToPictures; }
             set
             {
-                _options.ImgCopyright = value;
-                Save();
-            }
-        }
-
-        public string ImageCopyrightLink
-        {
-            get { return _options.ImgCopyrightLink; }
-            set
-            {
-                _options.ImgCopyrightLink = value;
-                Save();
-            }
-        }
-
-        public string ImageTitle
-        {
-            get { return _options.ImgTitle; }
-            set
-            {
-                _options.ImgTitle = value;
-                Save();
-            }
-        }
-
-        public string ImageQuiz
-        {
-            get { return _options.ImgQuiz; }
-            set
-            {
-                _options.ImgQuiz = value;
+                _options.AutoSaveWallpaperToPictures = value;
                 Save();
             }
         }
@@ -113,15 +79,9 @@ namespace BingWallpaper
         private class Options
         {
             [DataMember]
+            public bool AutoSaveWallpaperToPictures = false;
+            [DataMember]
             public bool LaunchOnStartup = true;
-            [DataMember]
-            public string ImgCopyright = "Bing Wallpaper";
-            [DataMember]
-            public string ImgCopyrightLink = "https://www.bing.com";
-            [DataMember]
-            public string ImgTitle = "";
-            [DataMember]
-            public string ImgQuiz = "https://www.bing.com";
             [DataMember]
             public string Location = "local";
         }

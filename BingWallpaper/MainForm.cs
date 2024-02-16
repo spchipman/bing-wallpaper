@@ -6,31 +6,13 @@ using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
 
-enum Locations
-{
-    local,
-    enAU,
-    enCA,
-    frCA,
-    zhCN,
-    deDE,
-    esES,
-    frFR,
-    enIN,
-    itIT,
-    jaJP,
-    enNZ,
-    enUK,
-    enUS
-}
-
 namespace BingWallpaper
 {
     public partial class MainForm : Form
     {
         private BingImageProvider _provider;
         private Settings _settings;
-        private Image _currentWallpaper;
+        private BingImage _currentWallpaper;
 
         public MainForm(BingImageProvider provider, Settings settings)
         {
@@ -47,9 +29,9 @@ namespace BingWallpaper
 
             AddTrayIcons();
             
-            // Set wallpaper every 24 hours
+            // Set wallpaper every 6 hours
             var timer = new System.Timers.Timer();
-            timer.Interval = 1000 * 60 * 60 * 24; // 24 hours
+            timer.Interval = 1000 * 60 * 60 * 6; // 6 hours
             timer.AutoReset = true;
             timer.Enabled = true;
             timer.Elapsed += (s, e) => SetWallpaper();
@@ -101,10 +83,25 @@ namespace BingWallpaper
                 var bingImg = await _provider.GetImage(mkt);
 
                 Wallpaper.Set(bingImg.Img, Wallpaper.Style.Stretched);
-                _currentWallpaper = bingImg.Img;
-                SetCopyrightTrayLabel(bingImg.Copyright, bingImg.CopyrightLink, bingImg.Title, bingImg.Quiz);
+                _currentWallpaper = bingImg;
 
-                ShowSetWallpaperNotification();
+                _titleLabel.Tag = _currentWallpaper.CopyrightLink;
+                _quizLabel.Text = _currentWallpaper.Title;
+                _quizLabel.Tag = _currentWallpaper.QuizLink;
+
+                if (_settings.AutoSaveWallpaperToPictures)
+                {
+                    string autoSaveDirectory = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyPictures)}\\Bing Wallpapers";
+                    if(!Directory.Exists(autoSaveDirectory))
+                    {
+                        Directory.CreateDirectory(autoSaveDirectory);
+                    }
+                    string filename = $"{autoSaveDirectory}\\{_currentWallpaper.ShortFileName}.jpg";
+                    if(!File.Exists(filename))
+                    {
+                        _currentWallpaper.Img.Save(filename, ImageFormat.Jpeg);
+                    }
+                }
             }
             catch
             {
@@ -112,57 +109,35 @@ namespace BingWallpaper
             }
         }
 
-        public void SetCopyrightTrayLabel(string copyright, string copyrightLink, string title, string quiz)
-        {
-            _settings.ImageCopyright = copyright;
-            _settings.ImageCopyrightLink = copyrightLink;
-            _settings.ImageTitle = title;
-            _settings.ImageQuiz = quiz;
-
-            _copyrightLabel.Text = copyright;
-            _copyrightLabel.Tag = copyrightLink;
-
-            _titleLabel.Text = title;
-            _titleLabel.Tag = quiz;
-        }
-
         #region Tray Icons
 
         private NotifyIcon _trayIcon;
         private ContextMenu _trayMenu;
-        private MenuItem _copyrightLabel;
         private MenuItem _titleLabel;
+        private MenuItem _quizLabel;
 
         public void AddTrayIcons()
         {
             // Create a simple tray menu with only one item.
             _trayMenu = new ContextMenu();
 
-            // Copyright button
-            _copyrightLabel = new MenuItem("Bing Wallpaper");
-            _copyrightLabel.Click += (s, e) =>
-            {
-                if (((MenuItem)s).Tag != null)
-                {
-                    var url = ((MenuItem)s).Tag.ToString();
-                    if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
-                        System.Diagnostics.Process.Start(url);
-                }
-            };
-            _trayMenu.MenuItems.Add(_copyrightLabel);
-
-            // Title button
-            _titleLabel = new MenuItem("");
+            //Title button
+            _titleLabel = new MenuItem("Bing Wallpaper");
             _titleLabel.Click += (s, e) =>
             {
-                if (((MenuItem)s).Tag != null)
-                {
-                    var url = ((MenuItem)s).Tag.ToString();
-                    if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
-                        System.Diagnostics.Process.Start(url);
-                }
+                if (Uri.IsWellFormedUriString(((MenuItem)s).Tag.ToString(), UriKind.Absolute))
+                    System.Diagnostics.Process.Start(((MenuItem)s).Tag.ToString());
             };
             _trayMenu.MenuItems.Add(_titleLabel);
+
+            // Quiz button
+            _quizLabel = new MenuItem("Quiz");
+            _quizLabel.Click += (s, e) =>
+            {
+                if (Uri.IsWellFormedUriString(((MenuItem)s).Tag.ToString(), UriKind.Absolute))
+                    System.Diagnostics.Process.Start(((MenuItem)s).Tag.ToString());
+            };
+            _trayMenu.MenuItems.Add(_quizLabel);
 
             // Separator
             _trayMenu.MenuItems.Add("-");
@@ -176,17 +151,16 @@ namespace BingWallpaper
             {
                 if (_currentWallpaper != null)
                 {
-                    var fileName = string.Join("_", _settings.ImageCopyright.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries)).TrimEnd('.');
                     var dialog = new SaveFileDialog
                     {
                         DefaultExt = "jpg",
                         Title = "Save current wallpaper",
-                        FileName = fileName,
+                        FileName = _currentWallpaper.LongFileName,
                         Filter = "Jpeg Image|*.jpg",
                     };
                     if (dialog.ShowDialog() == DialogResult.OK && dialog.FileName != "")
                     {
-                        _currentWallpaper.Save(dialog.FileName, ImageFormat.Jpeg);
+                        _currentWallpaper.Img.Save(dialog.FileName, ImageFormat.Jpeg);
                         System.Diagnostics.Process.Start(dialog.FileName);
                     }
                 }
@@ -201,7 +175,16 @@ namespace BingWallpaper
                 var mi = new MenuItem(item.ToString());
                 mi.RadioCheck = true;
                 mi.Checked = item.ToString().Equals(_settings.Location);
-                mi.Click += OnChangeLocation;
+                mi.Click += (s, e) =>
+                {
+                    foreach (MenuItem menuItem in ((MenuItem)s).Parent.MenuItems)
+                    {
+                        menuItem.Checked = false;
+                    }
+                    ((MenuItem)s).Checked = true;
+                    _settings.Location = ((MenuItem)s).Text;
+                    SetWallpaper();
+                };
                 location.MenuItems.Add(mi);
             }
             _trayMenu.MenuItems.Add(location);
@@ -209,8 +192,25 @@ namespace BingWallpaper
             // Launch on startup button
             var launch = new MenuItem("Launch on Startup");
             launch.Checked = _settings.LaunchOnStartup;
-            launch.Click += OnStartupLaunch;
+            launch.Click += (s, e) =>
+            {
+                var menuItem = (MenuItem)s;
+                menuItem.Checked = !menuItem.Checked;
+                SetStartup(menuItem.Checked);
+                _settings.LaunchOnStartup = menuItem.Checked;
+            };
             _trayMenu.MenuItems.Add(launch);
+
+            // Auto-Save Wallpaper button
+            var autoSave = new MenuItem("Auto-Save Wallpaper to Pictures");
+            autoSave.Checked = _settings.AutoSaveWallpaperToPictures;
+            autoSave.Click += (s, e) =>
+            {
+                var menuItem = (MenuItem)s;
+                menuItem.Checked = !menuItem.Checked;
+                _settings.AutoSaveWallpaperToPictures = menuItem.Checked;
+            };
+            _trayMenu.MenuItems.Add(autoSave);
 
             // Separator
             _trayMenu.MenuItems.Add("-");
@@ -227,7 +227,7 @@ namespace BingWallpaper
             {
                 if (e.Button == MouseButtons.Left)
                 {
-                    MethodInfo mi = typeof(NotifyIcon).GetMethod("ShowContextMenu", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                    MethodInfo mi = typeof(NotifyIcon).GetMethod("ShowContextMenu", BindingFlags.Instance | BindingFlags.NonPublic);
                     mi.Invoke(_trayIcon, null);
                 }
             };
@@ -235,26 +235,6 @@ namespace BingWallpaper
             // Add menu to tray icon and show it.
             _trayIcon.ContextMenu = _trayMenu;
             _trayIcon.Visible = true;
-        }
-
-        private void OnStartupLaunch(object sender, EventArgs e)
-        {
-            var launch = (MenuItem)sender;
-            launch.Checked = !launch.Checked;
-            SetStartup(launch.Checked);
-            _settings.LaunchOnStartup = launch.Checked;
-        }
-
-        private void OnChangeLocation(object sender, EventArgs e)
-        {
-            var location = (MenuItem)sender;
-            foreach (MenuItem item in location.Parent.MenuItems)
-            {
-                item.Checked = false;
-            }
-            location.Checked = true;
-            _settings.Location = location.Text;
-            SetWallpaper();
         }
 
         protected override void Dispose(bool isDisposing)
@@ -289,5 +269,22 @@ namespace BingWallpaper
         }
 
         #endregion
+    }
+    public enum Locations
+    {
+        local,
+        enAU,
+        enCA,
+        frCA,
+        zhCN,
+        deDE,
+        esES,
+        frFR,
+        enIN,
+        itIT,
+        jaJP,
+        enNZ,
+        enUK,
+        enUS
     }
 }
